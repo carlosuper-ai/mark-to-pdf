@@ -13,6 +13,21 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
     // Build Nitro for Netlify functions so the SSR server is deployable on Netlify.
-    nitro: { preset: "netlify" },
+    // puppeteer-core and @sparticuz/chromium crash Rollup when bundled — mark them
+    // external so Nitro traces and copies them to the output instead of inlining.
+    nitro: {
+      preset: "netlify",
+      externals: {
+        external: [
+          "puppeteer-core",
+          "@sparticuz/chromium",
+          "@puppeteer/browsers",
+          "chromium-bidi",
+          "ws",
+          "modern-tar",
+          "mitt",
+        ],
+      },
+    },
   },
 });
