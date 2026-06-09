@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build && node scripts/generate-netlify-index.cjs"
+  publish = ".output/public"
+  functions = ".output/server"
+
+# Redirect all requests to the SPA index (fallback) — Netlify will serve SSR via functions when available.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
