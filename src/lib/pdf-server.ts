@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createElement } from "react";
-import type { PaperFormat } from "puppeteer-core";
+import type { PaperFormat } from "puppeteer";
 import type { Resume } from "./resume-types";
 import { buildPrintDocument, createAtsDesign } from "./pdf-export";
 import type { ExportOptions } from "./pdf-export";
@@ -24,36 +24,18 @@ export const generateResumePdf = createServerFn({ method: "POST" })
     const resumeHtml = renderToStaticMarkup(createElement(ResumeRenderer, { resume }));
     const fullHtml = buildPrintDocument(resumeHtml, options, resume.design.spacing);
 
-    let browser: import("puppeteer-core").Browser;
+    // Puppeteer is only available in Node.js environments (not Cloudflare Workers)
+    let pup: typeof import("puppeteer") | null;
     try {
-      const puppeteer = await import("puppeteer-core");
-      let executablePath: string;
-      let args: string[];
-
-      try {
-        // Serverless environment (Netlify, AWS Lambda, etc.)
-        const chromium = await import("@sparticuz/chromium");
-        executablePath = await chromium.default.executablePath();
-        args = chromium.default.args;
-      } catch {
-        // Local dev: fall back to system Chrome
-        executablePath =
-          process.platform === "win32"
-            ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-            : process.platform === "darwin"
-              ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-              : "/usr/bin/google-chrome";
-        args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"];
-      }
-
-      browser = await puppeteer.default.launch({
-        executablePath,
-        args,
-        headless: true,
-      });
+      pup = await import("puppeteer");
     } catch {
       return { pdfBase64: null };
     }
+
+    const browser = await pup.default.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    });
 
     try {
       const page = await browser.newPage();
